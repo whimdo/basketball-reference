@@ -1,0 +1,33 @@
+from dataclasses import dataclass, asdict
+from typing import ClassVar, Dict
+
+@dataclass
+class PlayerCareerPerGameStats:
+    Years: str = ""
+    G: str = ""
+    GS: str = ""
+    MP: str = ""
+    FG: str = ""
+    FGA: str = ""
+    FG_percent: str = ""
+    _3P: str = ""
+    _3PA: str = ""
+    _3P_percent: str = ""
+    _2P: str = ""
+    _2PA: str = ""
+    _2P_percent: str = ""
+    eFG_percent: str = ""
+    FT: str = ""
+    FTA: str = ""
+    FT_percent: str = ""
+    ORB: str = ""
+    DRB: str = ""
+    TRB: str = ""
+    AST: str = ""
+    STL: str = ""
+    BLK: str = ""
+    TOV: str = ""
+    PF: str = ""
+    PTS: str = ""
+
+    
