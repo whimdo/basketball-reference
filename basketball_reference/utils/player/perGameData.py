@@ -1,7 +1,7 @@
 import json
 import os
 import sys
-from typing import Dict
+from typing import Dict, List
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -89,7 +89,7 @@ def pre_regular_game_data_certain_season(name:str,Season:str):
     """
     Get the per game data for a player in regular season for a certain season.
     :param name: Player's name
-    :param Season: Season in format 'YYYY-YY'
+    :param Season: Season in format 'YYYY'
     """
     return per_game_data_season(name,GameType.RS,Season,Season)
 
@@ -97,7 +97,7 @@ def pre_playoffs_game_data_certain_season(name:str,Season:str):
     """
     Get the per game data for a player in playoffs for a certain season.
     :param name: Player's name
-    :param Season: Season in format 'YYYY-YY'
+    :param Season: Season in format 'YYYY'
     """
     return per_game_data_season(name,GameType.PO,Season,Season)
 
@@ -216,11 +216,61 @@ def per_game_data_season(name: str, gameType: GameType, startSeason: str, endSea
     Get the per game data for a player in regular season or playoffs.
     :param name: Player's name
     :param gameType: GameType (Regular Season or Playoffs)
-    :param startSeason: Start season in format 'YYYY-YY'
-    :param endSeason: End season in format 'YYYY-YY'
+    :param startSeason: Start season in format 'YYYY'
+    :param endSeason: End season in format 'YYYY'
     """
     if( startSeason == endSeason):
         return get_per_game_data_single_season(name, gameType, startSeason)
     return get_per_game_data_multi_season(name, gameType, startSeason, endSeason)
 
+def per_game_detail_data_consecutive_seasons(name: str, gameType: GameType, startSeason: str, endSeason: str)-> List[PlayerSeasonPerGameStats]:
+    """
+    Get the detail per game data list for a player in regular season or playoffs for consecutive seasons.
+    :param name: Player's name
+    :param gameType: GameType (Regular Season or Playoffs)
+    :param startSeason: Start season in format 'YYYY'
+    :param endSeason: End season in format 'YYYY'
+    """
+    url = parse_player_url(name)
+    try:
+        # 发送HTTP请求
+        response = requests.get(url, headers=HEADERS)
+        response.raise_for_status()  # 检查请求是否成功
+        
+        # 解析HTML内容
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # 找到常规赛数据表格
+        if gameType == GameType.RS:
+            tableID = 'per_game_stats'
+        elif gameType == GameType.PO:
+            tableID = 'per_game_stats_post'
+
+        table = soup.find('table', {'id': tableID})
+
+        if table:
+            start_id = f'per_game_stats.{startSeason}'#查找到特定赛季的行
+            end_id = f'per_game_stats.{endSeason}'
+            
+            tbody = table.find("tbody")
+            row = tbody.find("tr", id=start_id)
+            data_list: list[PlayerSeasonPerGameStats] = []
+
+            while row:
+                row_id = row.get("id", "")
+                if row_id and row_id.startswith("per_game_stats."):
+                    data = row_to_data(row, FIELD_MAPPING_HTML_TO_PlayerSeasonPerGameStats)
+                    data_list.append(PlayerSeasonPerGameStats(**data))
+                if row_id == end_id:
+                    break
+                row = row.find_next_sibling("tr")
+
+            return data_list
+        else:
+            print(f"未找到常规赛数据表格: {url}")
+            return None
+        
+    except Exception as e:
+        print(f"获取数据时出错: {url} - {str(e)}")
+        return None
 
